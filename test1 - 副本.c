@@ -5,23 +5,21 @@
 
 #define MAX_KEYS 64
 
-// ÇĞ»» CapsLock
 void set_capslock(BOOL on) {
     BOOL state = (GetKeyState(VK_CAPITAL) & 1) != 0;
     if (state != on) {
-        // ÇĞ»» CapsLock
+        // åˆ‡æ¢ CapsLock
         keybd_event(VK_CAPITAL, 0, 0, 0);
         keybd_event(VK_CAPITAL, 0, KEYEVENTF_KEYUP, 0);
         Sleep(10);
     }
 }
 
-// ÅúÁ¿·¢ËÍ°´¼üÊÂ¼ş
 void send_input(INPUT *inputs, int count) {
     if (count > 0) SendInput(count, inputs, sizeof(INPUT));
 }
 
-// ²É¼¯²¢·¢ËÍÆÕÍ¨¼ü£¨Ğ¡Ğ´¡¢Êı×Ö¡¢·ûºÅ£©
+// é‡‡é›†å¹¶å‘é€æ™®é€šé”®ï¼ˆå°å†™ã€æ•°å­—ã€ç¬¦å·ï¼‰
 void play_normal(const char *notes, int n, BOOL keyup) {
     INPUT ev[MAX_KEYS * 2];
     int cnt = 0;
@@ -30,7 +28,7 @@ void play_normal(const char *notes, int n, BOOL keyup) {
         SHORT vkPair;
         BYTE vkCode;
         BOOL needShift = FALSE;
-        // ·ûºÅÓ³Éä
+        // ç¬¦å·æ˜ å°„
         switch (ch) {
             case '!': vkCode = '1'; needShift = TRUE; break;
             case '@': vkCode = '2'; needShift = TRUE; break;
@@ -49,19 +47,19 @@ void play_normal(const char *notes, int n, BOOL keyup) {
                     if (HIBYTE(vkPair) & 1) needShift = TRUE;
                 } else continue;
         }
-        // °´ÏÂ Shift
+        // æŒ‰ä¸‹ Shift
         if (needShift && !keyup) {
             ev[cnt].type = INPUT_KEYBOARD;
             ev[cnt].ki.wVk = VK_SHIFT;
             ev[cnt].ki.dwFlags = 0;
             cnt++;
         }
-        // °´ÏÂ/ËÉ¿ªÖ÷¼ü
+        // æŒ‰ä¸‹/æ¾å¼€ä¸»é”®
         ev[cnt].type = INPUT_KEYBOARD;
         ev[cnt].ki.wVk = vkCode;
         ev[cnt].ki.dwFlags = keyup ? KEYEVENTF_KEYUP : 0;
         cnt++;
-        // ËÉ¿ª Shift
+        // æ¾å¼€ Shift
         if (needShift && keyup) {
             ev[cnt].type = INPUT_KEYBOARD;
             ev[cnt].ki.wVk = VK_SHIFT;
@@ -72,7 +70,7 @@ void play_normal(const char *notes, int n, BOOL keyup) {
     send_input(ev, cnt);
 }
 
-// ²É¼¯²¢·¢ËÍ´óĞ´¼ü£¨CapsLock + Ğ¡Ğ´¼ü£©
+// é‡‡é›†å¹¶å‘é€å¤§å†™é”®ï¼ˆCapsLock + å°å†™é”®ï¼‰
 void play_upper(const char *notes, int n, BOOL keyup) {
     INPUT ev[MAX_KEYS];
     int cnt = 0;
@@ -92,17 +90,17 @@ void play_upper(const char *notes, int n, BOOL keyup) {
 
 int main() {
     char score[4096];
-    printf("ÇëÊäÈëÆ××Ó: ");
+    printf("è¯·è¾“å…¥è°±å­: ");
     if (!fgets(score, sizeof(score), stdin)) return 1;
-    printf("°´ = ¼üÑİ×àÏÂÒ»¸ö£¬³¤°´³ÖĞø£¬ËÉ¿ªÊÍ·Å£¬=²»Êä³ö¡£\n");
+    printf("æŒ‰ = é”®æ¼”å¥ä¸‹ä¸€ä¸ªï¼Œé•¿æŒ‰æŒç»­ï¼Œæ¾å¼€é‡Šæ”¾ï¼Œ=ä¸è¾“å‡ºã€‚\n");
 
     int len = strlen(score), idx = 0;
     BOOL lastEq = FALSE;
     while (1) {
-        // Ìø¹ı = ¿Õ¸ñ »»ĞĞ
+        // è·³è¿‡ = ç©ºæ ¼ æ¢è¡Œ
         while (idx < len && (score[idx] == '=' || isspace(score[idx]))) idx++;
         if (idx >= len) break;
-        // ½âÎöÒ»¸öÒô·û»òºÍÏÒ
+        // è§£æä¸€ä¸ªéŸ³ç¬¦æˆ–å’Œå¼¦
         char notes[MAX_KEYS]; int nc = 0;
         if (score[idx] == '[') {
             int j = idx + 1;
@@ -116,34 +114,29 @@ int main() {
             idx++;
         }
         if (nc == 0) continue;
-        // ±ßÑØ¼ì²â =
         unsigned long long t0, t1;
         while (1) {
             BOOL eq = (GetAsyncKeyState(VK_OEM_PLUS) & 0x8000) != 0;
             if (eq && !lastEq) { t0 = GetTickCount64(); break; }
             lastEq = eq; Sleep(5);
         }
-        // ÅĞ¶ÏÊÇ·ñº¬´óĞ´
         BOOL hasUpper = FALSE;
         for (int i = 0; i < nc; i++) if (isupper(notes[i])) { hasUpper = TRUE; break; }
         if (hasUpper) set_capslock(TRUE);
-        // ·¢ËÍ´óĞ´
         play_upper(notes, nc, FALSE);
-        // ·¢ËÍÆÕÍ¨
         play_normal(notes, nc, FALSE);
-        // ³¤°´¼ì²â
+        // é•¿æŒ‰æ£€æµ‹
         while (1) {
             BOOL eq = (GetAsyncKeyState(VK_OEM_PLUS) & 0x8000) != 0;
             if (!eq) break;
             t1 = GetTickCount64(); if (t1 - t0 > 700) while(GetAsyncKeyState(VK_OEM_PLUS) & 0x8000) Sleep(5);
             Sleep(5);
         }
-        // ÊÍ·ÅÆÕÍ¨
         play_normal(notes, nc, TRUE);
-        // ÊÍ·Å´óĞ´
         play_upper(notes, nc, TRUE);
         if (hasUpper) set_capslock(FALSE);
     }
-    printf("Ñİ×àÍê³É!\n");
+    printf("æ¼”å¥å®Œæˆ!\n");
     return 0;
+
 }
